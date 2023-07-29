@@ -12,10 +12,10 @@ Parameters:
   VPCBlock:
     Type: String
     Description: VPC Block Size 
-    Default: 192.168.0.0/24
+    Default: 192.168.0.0/18
   PublicSubnetBlock:
     Type: String
-    Default: 192.168.0.0/26
+    Default: 192.168.0.0/24
     Description: CidrBlock for public subnet 01 within the VPC
 Resources:
   #============================================================================#
@@ -44,7 +44,7 @@ Resources:
   MultiClusterVPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock:  !Ref VpcBlock
+      CidrBlock: !Ref VpcBlock
   #============================================================================#
   # Subnet
   #============================================================================#
