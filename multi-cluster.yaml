@@ -9,7 +9,7 @@ Parameters:
     Type: String
     Description: Name of EKS Cluster 
     Default: multi-cluster
-  VPCBlock:
+  CidrBlock:
     Type: String
     Description: VPC Block Size 
     Default: 10.0.0.0/16
@@ -44,7 +44,8 @@ Resources:
   MultiClusterVPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: !Ref VpcBlock
+      CidrBlock: 
+        Ref: CidrBlock
   #============================================================================#
   # Subnet
   #============================================================================#
