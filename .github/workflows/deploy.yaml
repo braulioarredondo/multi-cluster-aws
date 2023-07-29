@@ -8,7 +8,7 @@ env:
   SHA: $(git rev-parse HEAD)
 
 jobs:
-  build:
+  Multi-cluster-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

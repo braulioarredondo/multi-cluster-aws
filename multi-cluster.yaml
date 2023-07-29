@@ -27,7 +27,7 @@ Resources:
       RoleName: !Ref EKSIAMRoleName
       AssumeRolePolicyDocument: 
         Version: "2012-10-17"
-          Statement:
+        Statement:
             - Effect: Allow
               Principal:
                 Service:
@@ -59,10 +59,11 @@ Resources:
         - '1'
         - Fn::GetAZs:
           Ref: AWS::Region
+      DependsOn: [MultiClusterVPC] 
   #============================================================================#
   # Security Group
   #============================================================================#
-  ControlPlaneSecurityGroup:
+  MultiClusterSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Cluster communication with worker nodes
@@ -71,19 +72,18 @@ Resources:
       - IpProtocol: tcp
         FromPort: 5432
         ToPort: 6379
+      DependsOn: [MultiClusterVPC] 
   #============================================================================#
   # EKS Cluster
   #============================================================================#
   MultiClusterEKS:
     Type: AWS::EKS::Cluster
     Properties: 
-      Name: !Ref EKSMultiClusterName
-      KubernetesNetworkConfig:  *
-        KubernetesNetworkConfig
-      ResourcesVpcConfig: 
-        SecurityGroupIds:
-          - sg-6979fe18
-        SubnetIds:
-          - subnet-6782e71e
+      Name: !Ref EKSMultiClusterName 
       RoleArn:  !GetAtt MultiClusterRole.Arn
-      DependsOn: [MultiClusterRole]
+      ResourcesVpcConfig:
+          SecurityGroupIds:
+          - !Ref MultiClusterSecurityGroup
+          SubnetIds:
+          - !Ref MultiClusterSubnet
+      DependsOn: [MultiClusterRole, MultiClusterSubnet, MultiClusterSecurityGroup]
