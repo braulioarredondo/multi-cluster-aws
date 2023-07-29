@@ -44,8 +44,8 @@ jobs:
 
       - name: Deploy to AWS CloudFormation
         uses: aws-actions/aws-cloudformation-github-deploy@v1
-          with:
-            name: multi-cluster
-            template: multi-cluster.yaml
-            no-fail-on-empty-changeset: "1"
-            parameter-overrides: "EKSMultiClusterName=multi-cluster --capabilities CAPABILITY_IAM"
+        with:
+          name: multi-cluster
+          template: multi-cluster.yaml
+          no-fail-on-empty-changeset: "1"
+          parameter-overrides: "EKSMultiClusterName=multi-cluster --capabilities CAPABILITY_IAM"
