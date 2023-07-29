@@ -85,5 +85,5 @@ Resources:
           - sg-6979fe18
         SubnetIds:
           - subnet-6782e71e
-      RoleArn: "Fn::GetAtt": ["MultiClusterRole", "Arn"]
+      RoleArn:  !GetAtt MultiClusterRole.Arn
       DependsOn: [MultiClusterRole]
