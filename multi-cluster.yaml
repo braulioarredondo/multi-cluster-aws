@@ -12,10 +12,10 @@ Parameters:
   VPCBlock:
     Type: String
     Description: VPC Block Size 
-    Default: 192.168.0.0/18
+    Default: 10.0.0.0/16
   PublicSubnetBlock:
     Type: String
-    Default: 192.168.0.0/24
+    Default: 10.0.0.0/24
     Description: CidrBlock for public subnet 01 within the VPC
 Resources:
   #============================================================================#
