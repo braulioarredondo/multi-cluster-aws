@@ -54,11 +54,9 @@ Resources:
       VpcId:
         Ref: !Ref MultiClusterVPC
       CidrBlock: !Ref PublicSubnetBlock
-      AvailabilityZone:
-        Fn::Select:
-        - '1'
-        - Fn::GetAZs:
-          Ref: AWS::Region
+      AvailabilityZone: !Select 
+        - 0
+        - Fn::GetAZs: !Ref 'AWS::Region'
       DependsOn: [MultiClusterVPC] 
   #============================================================================#
   # Security Group
