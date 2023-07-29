@@ -1,0 +1,51 @@
+name: Test MultiK8s
+on:
+  push:
+    branches:
+      - master
+
+env:
+  SHA: $(git rev-parse HEAD)
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build Images
+        run: |-
+          docker build -t braulioarredondo/multi-client-k8s:latest -t braulioarredondo/multi-client-k8s:${{ env.SHA }} -f ./client/Dockerfile ./client
+          docker build -t braulioarredondo/multi-server-k8s:latest -t braulioarredondo/multi-server-k8s:${{ env.SHA }} -f ./server/Dockerfile ./server
+          docker build -t braulioarredondo/multi-worker-k8s:latest -t braulioarredondo/multi-worker-k8s:${{ env.SHA }} -f ./worker/Dockerfile ./worker
+
+      - name: Test
+        run: |-
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+          docker build -t braulioarredondo/react-test -f ./client/Dockerfile.dev ./client
+          docker run -e CI=true braulioarredondo/react-test npm test
+
+      - name: Push
+        run: |-
+          docker push braulioarredondo/multi-client-k8s-gh:latest
+          docker push braulioarredondo/multi-server-k8s-gh:latest
+          docker push braulioarredondo/multi-worker-k8s-gh:latest
+
+          docker push braulioarredondo/multi-client-k8s-gh:${{ env.SHA }}
+          docker push braulioarredondo/multi-server-k8s-gh:${{ env.SHA }}
+          docker push braulioarredondo/multi-worker-k8s-gh:${{ env.SHA }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SCRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Deploy to AWS CloudFormation
+        uses: aws-actions/aws-cloudformation-github-deploy@v1
+        with:
+          name: multi-cluster
+          template: multi-cluster.yaml
+          no-fail-on-empty-changeset: "1"
+          parameter-overrides: "  EKSMultiClusterName=multi-cluster"

@@ -87,6 +87,3 @@ Resources:
           - subnet-6782e71e
       RoleArn: "Fn::GetAtt": ["MultiClusterRole", "Arn"]
       DependsOn: [MultiClusterRole]
-
-
-  
