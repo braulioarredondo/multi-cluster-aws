@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EKS multi-cluster 
+Parameters:
+  EKSIAMRoleName:
+    Type: String
+    Description: Name of EKS Role 
+    Default: EKSMultiClusterRole
+  EKSMultiClusterName:
+    Type: String
+    Description: Name of EKS Cluster 
+    Default: multi-cluster
+  VPCBlock:
+    Type: String
+    Description: VPC Block Size 
+    Default: 192.168.0.0/24
+  PublicSubnetBlock:
+    Type: String
+    Default: 192.168.0.0/26
+    Description: CidrBlock for public subnet 01 within the VPC
+Resources:
+  #============================================================================#
+  # Role
+  #============================================================================#
+  MultiClusterRole:
+    Type: AWS::IAM::Role
+    Properties: 
+      RoleName: !Ref EKSIAMRoleName
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - eks.amazonaws.com
+              Action:
+                - 'sts:AssumeRole'
+      Description: EKS Administrator Role for EKS multi-cluster
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+  #============================================================================#
+  # VPC
+  #============================================================================#
+  MultiClusterVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock:  !Ref VpcBlock
+  #============================================================================#
+  # Subnet
+  #============================================================================#
+  MultiClusterSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: !Ref MultiClusterVPC
+      CidrBlock: !Ref PublicSubnetBlock
+      AvailabilityZone:
+        Fn::Select:
+        - '1'
+        - Fn::GetAZs:
+          Ref: AWS::Region
+  #============================================================================#
+  # Security Group
+  #============================================================================#
+  ControlPlaneSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Cluster communication with worker nodes
+      VpcId: !Ref MultiClusterVPC
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 5432
+        ToPort: 6379
+  #============================================================================#
+  # EKS Cluster
+  #============================================================================#
+  MultiClusterEKS:
+    Type: AWS::EKS::Cluster
+    Properties: 
+      Name: !Ref EKSMultiClusterName
+      KubernetesNetworkConfig:  *
+        KubernetesNetworkConfig
+      ResourcesVpcConfig: 
+        SecurityGroupIds:
+          - sg-6979fe18
+        SubnetIds:
+          - subnet-6782e71e
+      RoleArn: "Fn::GetAtt": ["MultiClusterRole", "Arn"]
+      DependsOn: [MultiClusterRole]
+
+
+  
