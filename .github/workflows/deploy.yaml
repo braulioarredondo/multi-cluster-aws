@@ -27,13 +27,13 @@ jobs:
 
       - name: Push
         run: |-
-          docker push braulioarredondo/multi-client-k8s-gh:latest
-          docker push braulioarredondo/multi-server-k8s-gh:latest
-          docker push braulioarredondo/multi-worker-k8s-gh:latest
+          docker push braulioarredondo/multi-client-k8s:latest
+          docker push braulioarredondo/multi-server-k8s:latest
+          docker push braulioarredondo/multi-worker-k8s:latest
 
-          docker push braulioarredondo/multi-client-k8s-gh:${{ env.SHA }}
-          docker push braulioarredondo/multi-server-k8s-gh:${{ env.SHA }}
-          docker push braulioarredondo/multi-worker-k8s-gh:${{ env.SHA }}
+          docker push braulioarredondo/multi-client-k8s:${{ env.SHA }}
+          docker push braulioarredondo/multi-server-k8s:${{ env.SHA }}
+          docker push braulioarredondo/multi-worker-k8s:${{ env.SHA }}
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
