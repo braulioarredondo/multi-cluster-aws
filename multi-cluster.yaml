@@ -29,6 +29,35 @@ Parameters:
     Type: String
     Default: 10.0.4.0/24
     Description: CidrBlock for public subnet 01 within the VPC
+  DBName:
+    Type: String
+    Default: fibvalues
+    Description: Initial database name
+  AllocatedStorage:
+    Type: String
+    Default: 20
+    Description: Allocated instance storage for Postgres RDS
+  StorageType:
+    Type: String
+    Default: gp2
+    Description: RDS Database Storage class
+  DBInstanceClass:
+    Type: String
+    Default: db.t3.micro
+    Description: Instance type for Postgres RDS
+  EngineVersion:
+    Type: String
+    Default: 15.3
+    Description: Postgres version for DB instance
+  MasterUsername:
+    Type: String
+    Default: postgres
+    Description: Postgres user for DB instance 
+  MasterUserPassword:
+    Type: String
+    Default: postgres
+    Description: Postgres password for DB instance
+  DBSubnetGroupName: !Ref DBSubnetGroupName
 Resources:
   #============================================================================#
   # Role
@@ -129,3 +158,40 @@ Resources:
       - MultiClusterSubnet3
       - MultiClusterSubnet4
       - MultiClusterSecurityGroup
+  #============================================================================#
+  # Postgres Subnet Group
+  #============================================================================#
+  RdsDBSubnetGroup:
+      Type: "AWS::RDS::DBSubnetGroup"
+      Properties:
+        DBSubnetGroupName: "multi-cluster-subnet-group"
+        DBSubnetGroupDescription: "multi=cluster postgres subnet group"
+        SubnetIds:
+            - !Ref MultiClusterSubnet1
+            - !Ref MultiClusterSubnet2
+            - !Ref MultiClusterSubnet3
+            - !Ref MultiClusterSubnet4
+      DependsOn: 
+      - MultiClusterSubnet1
+      - MultiClusterSubnet2
+      - MultiClusterSubnet3
+      - MultiClusterSubnet4
+  #============================================================================#
+  # Postgres RDS
+  #============================================================================#
+  MultiClusterPostgres:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName: !Ref DBName
+      AllocatedStorage: !Ref AllocatedStorage
+      StorageType: !Ref StorageType
+      AutoMinorVersionUpgrade: false
+      DBInstanceClass: !Ref DBInstanceClass
+      DBSubnetGroupName: !Ref RdsDBSubnetGroup
+      Engine: posgres
+      EngineVersion: !Ref EngineVersion
+      MasterUsername: !Ref MasterUsername
+      MasterUserPassword: !Ref MasterUserPassword
+    DependsOn: 
+      - RdsDBSubnetGroup
+
