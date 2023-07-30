@@ -57,7 +57,6 @@ Parameters:
     Type: String
     Default: postgres
     Description: Postgres password for DB instance
-  DBSubnetGroupName: !Ref DBSubnetGroupName
 Resources:
   #============================================================================#
   # Role
