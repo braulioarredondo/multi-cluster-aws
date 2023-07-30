@@ -17,6 +17,22 @@ Parameters:
     Type: String
     Default: 10.0.0.0/24
     Description: CidrBlock for public subnet 01 within the VPC
+  VPCSubnetBlock1:
+    Type: String
+    Default: 10.0.1.0/24
+    Description: CidrBlock for public subnet 01 within the VPC
+  VPCSubnetBlock2:
+    Type: String
+    Default: 10.0.2.0/24
+    Description: CidrBlock for public subnet 01 within the VPC
+  VPCSubnetBlock3:
+    Type: String
+    Default: 10.0.3.0/24
+    Description: CidrBlock for public subnet 01 within the VPC
+  VPCSubnetBlock4:
+    Type: String
+    Default: 10.0.4.0/24
+    Description: CidrBlock for public subnet 01 within the VPC
 Resources:
   #============================================================================#
   # Role
@@ -48,12 +64,36 @@ Resources:
   #============================================================================#
   # Subnet
   #============================================================================#
-  MultiClusterSubnet:
+  MultiClusterSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref MultiClusterVPC
       CidrBlock: !Ref VPCSubnetBlock
-      AvailabilityZone: !Select [ 2, !GetAZs ]
+      AvailabilityZone: !Select [ 0, !GetAZs ]
+    DependsOn: 
+      - MultiClusterVPC
+  MultiClusterSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MultiClusterVPC
+      CidrBlock: !Ref VPCSubnetBlock
+      AvailabilityZone: !Select [ 1, !GetAZs ]
+    DependsOn: 
+      - MultiClusterVPC
+  MultiClusterSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MultiClusterVPC
+      CidrBlock: !Ref VPCSubnetBlock
+      AvailabilityZone: !Select [ 0, !GetAZs ]
+    DependsOn: 
+      - MultiClusterVPC
+  MultiClusterSubnet4:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MultiClusterVPC
+      CidrBlock: !Ref VPCSubnetBlock
+      AvailabilityZone: !Select [ 1, !GetAZs ]
     DependsOn: 
       - MultiClusterVPC
   #============================================================================#
