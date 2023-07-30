@@ -53,7 +53,7 @@ Resources:
     Properties:
       VpcId: !Ref MultiClusterVPC
       CidrBlock: !Ref VPCSubnetBlock
-      AvailabilityZone: !Select [ 1, !GetAZs ]
+      AvailabilityZone: !Select [ 2, !GetAZs ]
     DependsOn: 
       - MultiClusterVPC
   #============================================================================#
