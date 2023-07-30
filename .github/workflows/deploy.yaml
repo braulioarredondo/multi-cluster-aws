@@ -46,5 +46,5 @@ jobs:
         run: |-
           aws cloudformation create-stack --stack-name multi-cluster \
           --template-body multi-cluster.yaml \
-          --parameters EKSMultiClusterName=multi-cluster \
+          --parameters ParameterKey=EKSMultiClusterName,ParameterValue=multi-cluster \
           --capabilities CAPABILITY_NAMED_IAM
