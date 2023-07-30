@@ -13,10 +13,6 @@ Parameters:
     Type: String
     Description: VPC Block Size 
     Default: 10.0.0.0/16
-  VPCSubnetBlock:
-    Type: String
-    Default: 10.0.0.0/24
-    Description: CidrBlock for public subnet 01 within the VPC
   VPCSubnetBlock1:
     Type: String
     Default: 10.0.1.0/24
@@ -68,7 +64,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref MultiClusterVPC
-      CidrBlock: !Ref VPCSubnetBlock
+      CidrBlock: !Ref VPCSubnetBlock1
       AvailabilityZone: !Select [ 0, !GetAZs ]
     DependsOn: 
       - MultiClusterVPC
@@ -76,7 +72,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref MultiClusterVPC
-      CidrBlock: !Ref VPCSubnetBlock
+      CidrBlock: !Ref VPCSubnetBlock2
       AvailabilityZone: !Select [ 1, !GetAZs ]
     DependsOn: 
       - MultiClusterVPC
@@ -84,7 +80,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref MultiClusterVPC
-      CidrBlock: !Ref VPCSubnetBlock
+      CidrBlock: !Ref VPCSubnetBlock3
       AvailabilityZone: !Select [ 0, !GetAZs ]
     DependsOn: 
       - MultiClusterVPC
@@ -92,7 +88,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref MultiClusterVPC
-      CidrBlock: !Ref VPCSubnetBlock
+      CidrBlock: !Ref VPCSubnetBlock4
       AvailabilityZone: !Select [ 1, !GetAZs ]
     DependsOn: 
       - MultiClusterVPC
