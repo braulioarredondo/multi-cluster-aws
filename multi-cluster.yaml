@@ -122,8 +122,14 @@ Resources:
           SecurityGroupIds:
           - !Ref MultiClusterSecurityGroup
           SubnetIds:
-          - !Ref MultiClusterSubnet
+          - !Ref MultiClusterSubnet1
+          - !Ref MultiClusterSubnet2
+          - !Ref MultiClusterSubnet3
+          - !Ref MultiClusterSubnet4
     DependsOn: 
       - MultiClusterRole
-      - MultiClusterSubnet
+      - MultiClusterSubnet1
+      - MultiClusterSubnet2
+      - MultiClusterSubnet3
+      - MultiClusterSubnet5
       - MultiClusterSecurityGroup
