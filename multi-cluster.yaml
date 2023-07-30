@@ -187,10 +187,13 @@ Resources:
       AutoMinorVersionUpgrade: false
       DBInstanceClass: !Ref DBInstanceClass
       DBSubnetGroupName: !Ref RdsDBSubnetGroup
-      Engine: posgres
+      Engine: postgres
       EngineVersion: !Ref EngineVersion
       MasterUsername: !Ref MasterUsername
       MasterUserPassword: !Ref MasterUserPassword
+      VPCSecurityGroups: 
+        - !Ref MultiClusterSecurityGroup
     DependsOn: 
       - RdsDBSubnetGroup
+      - MultiClusterSecurityGroup
 
