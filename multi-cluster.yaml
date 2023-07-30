@@ -131,5 +131,5 @@ Resources:
       - MultiClusterSubnet1
       - MultiClusterSubnet2
       - MultiClusterSubnet3
-      - MultiClusterSubnet5
+      - MultiClusterSubnet4
       - MultiClusterSecurityGroup
