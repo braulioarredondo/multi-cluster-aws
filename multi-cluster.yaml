@@ -123,11 +123,29 @@ Resources:
   #============================================================================#
   # Postgres Subnet Group
   #============================================================================#
-  MultiClusterSubnetGroup:
+  MultiClusterRDSSubnetGroup:
       Type: "AWS::RDS::DBSubnetGroup"
       Properties:
-        DBSubnetGroupName: "multi-cluster-subnet-group"
-        DBSubnetGroupDescription: "multi=cluster postgres subnet group"
+        DBSubnetGroupName: "multi-cluster-rds-subnet-group"
+        DBSubnetGroupDescription: "multi-cluster postgres subnet group"
+        SubnetIds:
+            - !Ref MultiClusterSubnet1
+            - !Ref MultiClusterSubnet2
+            - !Ref MultiClusterSubnet3
+            - !Ref MultiClusterSubnet4
+      DependsOn: 
+      - MultiClusterSubnet1
+      - MultiClusterSubnet2
+      - MultiClusterSubnet3
+      - MultiClusterSubnet4
+  #============================================================================#
+  # Redis Subnet Group
+  #============================================================================#
+  MultiClusterRedisSubnetGroup:
+      Type: "AWS::ElastiCache::SubnetGroup"
+      Properties:
+        DBSubnetGroupName: "multi-cluster-redis-subnet-group"
+        DBSubnetGroupDescription: "multi-cluster redis subnet group"
         SubnetIds:
             - !Ref MultiClusterSubnet1
             - !Ref MultiClusterSubnet2
@@ -187,7 +205,7 @@ Resources:
       StorageType: !Ref StorageType
       AutoMinorVersionUpgrade: false
       DBInstanceClass: !Ref DBInstanceClass
-      DBSubnetGroupName: !Ref MultiClusterSubnetGroup
+      DBSubnetGroupName: !Ref MultiClusterRDSSubnetGroup
       Engine: postgres
       EngineVersion: !Ref EngineVersion
       MasterUsername: !Ref MasterUsername
@@ -195,7 +213,7 @@ Resources:
       VPCSecurityGroups: 
         - !Ref MultiClusterSecurityGroup
     DependsOn: 
-      - MultiClusterSubnetGroup
+      - MultiClusterRDSSubnetGroup
       - MultiClusterSecurityGroup
   #============================================================================#
   # Redis Cluster
@@ -208,10 +226,10 @@ Resources:
       CacheNodeType: cache.t2.micro
       NumCacheNodes: '1'
       Port: 6379
-      CacheSubnetGroupName: !Ref MultiClusterSubnetGroup
+      CacheSubnetGroupName: !Ref MultiClusterRedisSubnetGroup
       VpcSecurityGroupIds: 
         - !GetAtt  MultiClusterSecurityGroup.GroupId
     DependsOn: 
-      - MultiClusterSubnetGroup
+      - MultiClusterRedisSubnetGroup
       - MultiClusterSecurityGroup
 
