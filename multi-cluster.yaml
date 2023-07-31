@@ -144,8 +144,8 @@ Resources:
   MultiClusterRedisSubnetGroup:
       Type: "AWS::ElastiCache::SubnetGroup"
       Properties:
-        DBSubnetGroupName: "multi-cluster-redis-subnet-group"
-        DBSubnetGroupDescription: "multi-cluster redis subnet group"
+        CacheSubnetGroupName: "multi-cluster-redis-subnet-group"
+         Description: "multi-cluster redis subnet group"
         SubnetIds:
             - !Ref MultiClusterSubnet1
             - !Ref MultiClusterSubnet2
