@@ -209,8 +209,8 @@ Resources:
       NumCacheNodes: '1'
       Port: 6379
       CacheSubnetGroupName: !Ref MultiClusterSubnetGroup
-      CacheSecurityGroupNames: 
-        - !Ref  MultiClusterSecurityGroup
+      VpcSecurityGroupIds: 
+        - !GetAtt  MultiClusterSecurityGroup.GroupId
     DependsOn: 
       - MultiClusterSubnetGroup
       - MultiClusterSecurityGroup
