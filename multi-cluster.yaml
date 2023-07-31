@@ -195,7 +195,7 @@ Resources:
       VPCSecurityGroups: 
         - !Ref MultiClusterSecurityGroup
     DependsOn: 
-      - RdsDBSubnetGroup
+      - MultiClusterSubnetGroup
       - MultiClusterSecurityGroup
   #============================================================================#
   # Redis Cluster
@@ -211,4 +211,7 @@ Resources:
       CacheSubnetGroupName: !Ref MultiClusterSubnetGroup
       CacheSecurityGroupNames: 
         - !Ref  MultiClusterSecurityGroup
+    DependsOn: 
+      - MultiClusterSubnetGroup
+      - MultiClusterSecurityGroup
 
