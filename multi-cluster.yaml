@@ -121,6 +121,24 @@ Resources:
     DependsOn: 
       - MultiClusterVPC
   #============================================================================#
+  # Postgres Subnet Group
+  #============================================================================#
+  MultiClusterSubnetGroup:
+      Type: "AWS::RDS::DBSubnetGroup"
+      Properties:
+        DBSubnetGroupName: "multi-cluster-subnet-group"
+        DBSubnetGroupDescription: "multi=cluster postgres subnet group"
+        SubnetIds:
+            - !Ref MultiClusterSubnet1
+            - !Ref MultiClusterSubnet2
+            - !Ref MultiClusterSubnet3
+            - !Ref MultiClusterSubnet4
+      DependsOn: 
+      - MultiClusterSubnet1
+      - MultiClusterSubnet2
+      - MultiClusterSubnet3
+      - MultiClusterSubnet4
+  #============================================================================#
   # Security Group
   #============================================================================#
   MultiClusterSecurityGroup:
@@ -158,24 +176,6 @@ Resources:
       - MultiClusterSubnet3
       - MultiClusterSubnet4
       - MultiClusterSecurityGroup
-  #============================================================================#
-  # Postgres Subnet Group
-  #============================================================================#
-  MultiClusterSubnetGroup:
-      Type: "AWS::RDS::DBSubnetGroup"
-      Properties:
-        DBSubnetGroupName: "multi-cluster-subnet-group"
-        DBSubnetGroupDescription: "multi=cluster postgres subnet group"
-        SubnetIds:
-            - !Ref MultiClusterSubnet1
-            - !Ref MultiClusterSubnet2
-            - !Ref MultiClusterSubnet3
-            - !Ref MultiClusterSubnet4
-      DependsOn: 
-      - MultiClusterSubnet1
-      - MultiClusterSubnet2
-      - MultiClusterSubnet3
-      - MultiClusterSubnet4
   #============================================================================#
   # Postgres RDS
   #============================================================================#
