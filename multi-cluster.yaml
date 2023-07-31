@@ -132,6 +132,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 5432
           ToPort: 6379
+          CidrIp : !Ref VPCCidrBlock
     DependsOn: 
       - MultiClusterVPC
   #============================================================================#
@@ -160,7 +161,7 @@ Resources:
   #============================================================================#
   # Postgres Subnet Group
   #============================================================================#
-  RdsDBSubnetGroup:
+  MultiClusterSubnetGroup:
       Type: "AWS::RDS::DBSubnetGroup"
       Properties:
         DBSubnetGroupName: "multi-cluster-subnet-group"
@@ -186,7 +187,7 @@ Resources:
       StorageType: !Ref StorageType
       AutoMinorVersionUpgrade: false
       DBInstanceClass: !Ref DBInstanceClass
-      DBSubnetGroupName: !Ref RdsDBSubnetGroup
+      DBSubnetGroupName: !Ref MultiClusterSubnetGroup
       Engine: postgres
       EngineVersion: !Ref EngineVersion
       MasterUsername: !Ref MasterUsername
@@ -196,4 +197,18 @@ Resources:
     DependsOn: 
       - RdsDBSubnetGroup
       - MultiClusterSecurityGroup
+  #============================================================================#
+  # Redis Cluster
+  #============================================================================#
+  MultiClusterRedis:
+    Type: 'AWS::ElastiCache::CacheCluster'
+    Properties:    
+      ClusterName: multi-cluster-redis
+      Engine: redis
+      CacheNodeType: cache.t2.micro
+      NumCacheNodes: '1'
+      Port: 6379
+      CacheSubnetGroupName: !Ref MultiClusterSubnetGroup
+      CacheSecurityGroupNames: 
+        - !Ref  MultiClusterSecurityGroup
 
