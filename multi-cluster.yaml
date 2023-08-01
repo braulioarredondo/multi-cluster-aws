@@ -1,299 +1,525 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: EKS multi-cluster 
+Description: EKS cluster using a VPC with two public subnets
 Parameters:
-  EKSIAMRoleName:
+  EKSClusterName:
     Type: String
-    Description: Name of EKS Role 
-    Default: EKSMultiClusterRole
-  EKSNodeIAMRoleName:
+    Description: Name of k8s cluster
+    Default: multi-k8s-cluster
+  NumWorkerNodes:
+    Type: Number
+    Description: Number of worker nodes to create
+    Default: 3
+  WorkerNodesInstanceType: 
     Type: String
-    Description: Name of EKS Role for Nodes
-    Default: EKSMultiClusterNodeRole
-  EKSMultiClusterName:
+    Description: EC2 instance type for the worker nodes
+    Default: t3.small  
+  KeyPairName:
     Type: String
-    Description: Name of EKS Cluster 
-    Default: multi-cluster
-  VPCCidrBlock:
-    Type: String
-    Description: VPC Block Size 
-    Default: 10.0.0.0/16
-  VPCSubnetBlock1:
-    Type: String
-    Default: 10.0.1.0/24
-    Description: CidrBlock for public subnet 01 within the VPC
-  VPCSubnetBlock2:
-    Type: String
-    Default: 10.0.2.0/24
-    Description: CidrBlock for public subnet 01 within the VPC
-  VPCSubnetBlock3:
-    Type: String
-    Default: 10.0.3.0/24
-    Description: CidrBlock for public subnet 01 within the VPC
-  VPCSubnetBlock4:
-    Type: String
-    Default: 10.0.4.0/24
-    Description: CidrBlock for public subnet 01 within the VPC
-  DBName:
-    Type: String
-    Default: fibvalues
-    Description: Initial database name
-  AllocatedStorage:
-    Type: String
-    Default: 20
-    Description: Allocated instance storage for Postgres RDS
-  StorageType:
-    Type: String
-    Default: gp2
-    Description: RDS Database Storage class
-  DBInstanceClass:
-    Type: String
-    Default: db.t3.micro
-    Description: Instance type for Postgres RDS
-  EngineVersion:
-    Type: String
-    Default: 15.3
-    Description: Postgres version for DB instance
-  MasterUsername:
-    Type: String
-    Default: postgres
-    Description: Postgres user for DB instance 
-  MasterUserPassword:
-    Type: String
-    Default: postgres
-    Description: Postgres password for DB instance
+    Description: Name of an existing EC2 key pair (for SSH-access to the worker node instances)
+    Default: eks-test  
+Mappings:
+  VpcIpRanges:
+    Option1:
+      VPC: 10.100.0.0/16    
+      PublicSubnet1 : 10.100.0.0/20
+      PublicSubnet2: 10.100.16.0/20
+      PrivateSubnet1: 10.100.32.0/20
+      PrivateSubnet2: 10.100.48.0/20
+      PersistenceSubnet1: 10.100.64.0/20
+      PersistenceSubnet2: 10.100.80.0/20
+  EksAmiIds:    
+    us-east-1:
+      Standard: ami-0b614a5d911900a9b
+    
 Resources:
-  #============================================================================#
-  # EKS Cluster Role
-  #============================================================================#
-  MultiClusterRole:
-    Type: AWS::IAM::Role
-    Properties: 
-      RoleName: !Ref EKSIAMRoleName
-      AssumeRolePolicyDocument: 
-        Version: "2012-10-17"
-        Statement:
-            - Effect: Allow
-              Principal:
-                Service:
-                  - eks.amazonaws.com
-              Action:
-                - 'sts:AssumeRole'
-      Description: EKS Administrator Role for EKS multi-cluster
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
-        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
-  #============================================================================#
-  # EKS Node Role
-  #============================================================================#
-  MultiClusterNodeRole:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: !Ref EKSNodeIAMRoleName
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-      Description: EKS Administrator Role for EKS multi-cluster
-      ManagedPolicyArns:
-        - "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-        - "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-        - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
   #============================================================================#
   # VPC
   #============================================================================#
-  MultiClusterVPC:
+
+  VPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: !Ref VPCCidrBlock
-  #============================================================================#
-  # Subnet
-  #============================================================================#
-  MultiClusterSubnet1:
+      CidrBlock: !FindInMap [ VpcIpRanges, Option1, VPC ]
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+  PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref MultiClusterVPC
-      CidrBlock: !Ref VPCSubnetBlock1
-      AvailabilityZone: !Select [ 0, !GetAZs ]
-    DependsOn: 
-      - MultiClusterVPC
-  MultiClusterSubnet2:
+      VpcId: !Ref VPC
+      CidrBlock: !FindInMap [ VpcIpRanges, Option1, PublicSubnet1 ]
+      # AvailabilityZone: !Select
+      #   - 0
+      #   - !GetAZs ""
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PublicSubnet1"
+        - Key: kubernetes.io/role/elb
+          Value: 1
+        - Key: !Sub "kubernetes.io/cluster/${AWS::StackName}"
+          Value: shared
+    DepensOn: VPC
+  PublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref MultiClusterVPC
-      CidrBlock: !Ref VPCSubnetBlock2
-      AvailabilityZone: !Select [ 1, !GetAZs ]
-    DependsOn: 
-      - MultiClusterVPC
-  MultiClusterSubnet3:
+      VpcId: !Ref VPC
+      CidrBlock: !FindInMap [ VpcIpRanges, Option1, PublicSubnet2 ]
+      # AvailabilityZone: !Select
+      #   - 1
+      #   - !GetAZs ""
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PublicSubnet2"
+        - Key: kubernetes.io/role/elb
+          Value: 1
+        - Key: !Sub "kubernetes.io/cluster/${AWS::StackName}"
+          Value: shared
+    DepensOn: VPC
+  PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref MultiClusterVPC
-      CidrBlock: !Ref VPCSubnetBlock3
-      AvailabilityZone: !Select [ 0, !GetAZs ]
-    DependsOn: 
-      - MultiClusterVPC
-  MultiClusterSubnet4:
+      VpcId: !Ref VPC
+      CidrBlock: !FindInMap [ VpcIpRanges, Option1, PrivateSubnet1 ]
+      # AvailabilityZone: !Select
+      #   - 1
+      #   - !GetAZs ""
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PrivateSubnet1"
+        - Key: kubernetes.io/role/internal-elb
+          Value: 1
+        - Key: !Sub "kubernetes.io/cluster/${AWS::StackName}"
+          Value: shared
+    DepensOn: VPC
+  PrivateSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref MultiClusterVPC
-      CidrBlock: !Ref VPCSubnetBlock4
-      AvailabilityZone: !Select [ 1, !GetAZs ]
+      VpcId: !Ref VPC
+      CidrBlock: !FindInMap [ VpcIpRanges, Option1, PrivateSubnet2 ]
+      # AvailabilityZone: !Select
+      #   - 1
+      #   - !GetAZs ""
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PrivateSubnet2"
+        - Key: kubernetes.io/role/internal-elb
+          Value: 1
+        - Key: !Sub "kubernetes.io/cluster/${AWS::StackName}"
+          Value: shared
+    DepensOn: VPC    
+  PersistenceSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !FindInMap [ VpcIpRanges, Option1, PersistenceSubnet1 ]
+      # AvailabilityZone: !Select
+      #   - 1
+      #   - !GetAZs ""
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PersistenceSubnet1"
+    DepensOn: VPC
+  PersistenceSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !FindInMap [ VpcIpRanges, Option1, PersistenceSubnet2 ]
+      # AvailabilityZone: !Select
+      #   - 1
+      #   - !GetAZs ""
+      AvailabilityZone: !Select [ 1, !GetAZs '' ]
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PersistenceSubnet2"
+    DepensOn: VPC
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref InternetGateway
+      VpcId: !Ref VPC
+    DepensOn: 
+      - VPC
+      - InternetGateway
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-PublicSubnets"
+    DependsOn: VPC
+  InternetGatewayRoute:
+    Type: AWS::EC2::Route
+    # DependsOn is mandatory because route targets InternetGateway
+    # See here: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-attribute-dependson.html#gatewayattachment
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      DependsOn: VPCGatewayAttachment
+  NatGateway1EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      Domain: vpc
+  NatGateway2EIP:
+    Type: AWS::EC2::EIP
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      Domain: vpc
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway1EIP.AllocationId
+      SubnetId: !Ref PublicSubnet1
     DependsOn: 
-      - MultiClusterVPC
+      - NatGateway1EIP
+      - PublicSubnet1
+  NatGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway2EIP.AllocationId
+      SubnetId: !Ref PublicSubnet2
+    DependsOn: 
+      - NatGateway2EIP
+      - PublicSubnet2
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName} Private Routes (AZ1)
+    DependsOn: 
+      - VPC
+  DefaultPrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+    DependsOn: NatGateway1
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName} Private Routes (AZ1)
+    DependsOn: 
+      - VPC
+  DefaultPrivateRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway2
+    DependsOn: NatGateway2
+
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref RouteTable
+    DependsOn: 
+      - PublicSubnet1
+      - RouteTable
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref RouteTable
+    DependsOn: 
+      - PublicSubnet2
+      - RouteTable
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable1
+    DependsOn: 
+      - PublicSubnet1
+      - PrivateRouteTable1
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable2
+    DependsOn: 
+      - PublicSubnet2
+      - PrivateRouteTable2
+  PersistenceSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PersistenceSubnet1
+      RouteTableId: !Ref RouteTable
+    DependsOn: 
+      - PersistenceSubnet1
+      - RouteTable
+  PersistenceSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PersistenceSubnet2
+      RouteTableId: !Ref RouteTable
+    DependsOn: 
+      - PersistenceSubnet2
+      - RouteTable
+
   #============================================================================#
-  # Postgres Subnet Group
+  # Control plane
   #============================================================================#
-  MultiClusterRDSSubnetGroup:
-      Type: "AWS::RDS::DBSubnetGroup"
-      Properties:
-        DBSubnetGroupName: "multi-cluster-rds-subnet-group"
-        DBSubnetGroupDescription: "multi-cluster postgres subnet group"
+  ControlPlaneRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+            Effect: Allow
+            Principal:
+              Service:
+                - eks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns: 
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+  ControlPlane:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: !Ref AWS::StackName
+      Version: "1.19"
+      RoleArn: !GetAtt ControlPlaneRole.Arn
+      ResourcesVpcConfig:
+        SecurityGroupIds:
+          - !Ref ControlPlaneSecurityGroup
         SubnetIds:
-            - !Ref MultiClusterSubnet1
-            - !Ref MultiClusterSubnet2
-            - !Ref MultiClusterSubnet3
-            - !Ref MultiClusterSubnet4
-      DependsOn: 
-      - MultiClusterSubnet1
-      - MultiClusterSubnet2
-      - MultiClusterSubnet3
-      - MultiClusterSubnet4
+          - !Ref PrivateSubnet1
+          - !Ref PrivateSubnet2 
+    DependsOn:
+      - ControlPlaneRole
+      - ControlPlaneSecurityGroup
+      - PrivateSubnet1
+      - PrivateSubnet2
   #============================================================================#
-  # Redis Subnet Group
+  # Control plane security group
   #============================================================================#
-  MultiClusterRedisSubnetGroup:
-      Type: "AWS::ElastiCache::SubnetGroup"
-      Properties:
-        CacheSubnetGroupName: "multi-cluster-redis-subnet-group"
-        Description: "multi-cluster redis subnet group"
-        SubnetIds:
-            - !Ref MultiClusterSubnet1
-            - !Ref MultiClusterSubnet2
-            - !Ref MultiClusterSubnet3
-            - !Ref MultiClusterSubnet4
-      DependsOn: 
-      - MultiClusterSubnet1
-      - MultiClusterSubnet2
-      - MultiClusterSubnet3
-      - MultiClusterSubnet4
-  #============================================================================#
-  # Security Group
-  #============================================================================#
-  MultiClusterSecurityGroup:
+
+  ControlPlaneSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Cluster communication with worker nodes
-      VpcId: !Ref MultiClusterVPC
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 5432
-          ToPort: 6379
-          CidrIp : !Ref VPCCidrBlock
-    DependsOn: 
-      - MultiClusterVPC
-  #============================================================================#
-  # EKS Cluster
-  #============================================================================#
-  MultiClusterEKS:
-    Type: AWS::EKS::Cluster
-    Properties: 
-      Name: !Ref EKSMultiClusterName 
-      RoleArn:  !GetAtt MultiClusterRole.Arn
-      ResourcesVpcConfig:
-          SecurityGroupIds:
-          - !Ref MultiClusterSecurityGroup
-          SubnetIds:
-          - !Ref MultiClusterSubnet1
-          - !Ref MultiClusterSubnet2
-          - !Ref MultiClusterSubnet3
-          - !Ref MultiClusterSubnet4
-    DependsOn: 
-      - MultiClusterRole
-      - MultiClusterSubnet1
-      - MultiClusterSubnet2
-      - MultiClusterSubnet3
-      - MultiClusterSubnet4
-      - MultiClusterSecurityGroup
-  #============================================================================#
-  # EKS Cluster Addon
-  #============================================================================#
-  MultiClusterVpcCni:
-    Type: AWS::EKS::Addon
-    Properties:
-      AddonName: multi-cluster-vpc-cni
-      ClusterName: !Ref EKSMultiClusterName  
-      ResolveConflicts: OVERWRITE
-    DependsOn: 
-      - MultiClusterEKS
-  #============================================================================#
-  # EKS Node Group
-  #============================================================================#
-  MultiClusterNodeGroup:
-      Type: 'AWS::EKS::Nodegroup'
-      Properties:
-        ClusterName: !Ref EKSMultiClusterName 
-        NodeRole: !GetAtt MultiClusterNodeRole.Arn
-        InstanceTypes:
-          - t3.small
-        ScalingConfig:
-          MinSize: 2
-          DesiredSize: 3
-          MaxSize: 4
-        Subnets:
-          - !Ref MultiClusterSubnet1
-          - !Ref MultiClusterSubnet2
-          - !Ref MultiClusterSubnet3
-          - !Ref MultiClusterSubnet4
-      DependsOn: 
-      - MultiClusterNodeRole
-      - MultiClusterEKS
-      - MultiClusterVpcCni
-      - MultiClusterSubnet1
-      - MultiClusterSubnet2
-      - MultiClusterSubnet3
-      - MultiClusterSubnet4
-      - MultiClusterSecurityGroup
-  #============================================================================#
-  # Postgres RDS
-  #============================================================================#
-  MultiClusterPostgres:
-    Type: AWS::RDS::DBInstance
-    Properties:
-      DBName: !Ref DBName
-      AllocatedStorage: !Ref AllocatedStorage
-      StorageType: !Ref StorageType
-      AutoMinorVersionUpgrade: false
-      DBInstanceClass: !Ref DBInstanceClass
-      DBSubnetGroupName: !Ref MultiClusterRDSSubnetGroup
-      Engine: postgres
-      EngineVersion: !Ref EngineVersion
-      MasterUsername: !Ref MasterUsername
-      MasterUserPassword: !Ref MasterUserPassword
-      VPCSecurityGroups: 
-        - !Ref MultiClusterSecurityGroup
-    DependsOn: 
-      - MultiClusterRDSSubnetGroup
-      - MultiClusterSecurityGroup
-  #============================================================================#
-  # Redis Cluster
-  #============================================================================#
-  MultiClusterRedis:
-    Type: 'AWS::ElastiCache::CacheCluster'
-    Properties:    
-      ClusterName: multi-cluster-redis
-      Engine: redis
-      CacheNodeType: cache.t2.micro
-      NumCacheNodes: '1'
-      Port: 6379
-      CacheSubnetGroupName: !Ref MultiClusterRedisSubnetGroup
-      VpcSecurityGroupIds: 
-        - !GetAtt  MultiClusterSecurityGroup.GroupId
-    DependsOn: 
-      - MultiClusterRedisSubnetGroup
-      - MultiClusterSecurityGroup
+      GroupDescription: Security group for the elastic network interfaces between the control plane and the worker nodes
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-ControlPlaneSecurityGroup"
+    DependsOn:
+      - VPC      
 
+  ControlPlaneIngressFromWorkerNodesHttps:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow incoming HTTPS traffic (TCP/443) from worker nodes (for API server)
+      GroupId: !Ref ControlPlaneSecurityGroup
+      SourceSecurityGroupId: !Ref WorkerNodesSecurityGroup
+      IpProtocol: tcp
+      ToPort: 443
+      FromPort: 443
+    DependsOn:
+      - ControlPlaneSecurityGroup
+      - WorkerNodesSecurityGroup
+  ControlPlaneEgressToWorkerNodesKubelet:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Allow outgoing kubelet traffic (TCP/10250) to worker nodes
+      GroupId: !Ref ControlPlaneSecurityGroup
+      DestinationSecurityGroupId: !Ref WorkerNodesSecurityGroup
+      IpProtocol: tcp
+      FromPort: 10250
+      ToPort: 10250
+    DependsOn:
+      - ControlPlaneSecurityGroup
+      - WorkerNodesSecurityGroup
+  ControlPlaneEgressToWorkerNodesHttps:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Allow outgoing HTTPS traffic (TCP/442) to worker nodes (for pods running extension API servers)
+      GroupId: !Ref ControlPlaneSecurityGroup
+      DestinationSecurityGroupId: !Ref WorkerNodesSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+    DependsOn:
+      - ControlPlaneSecurityGroup
+      - WorkerNodesSecurityGroup
+
+  #============================================================================#
+  # Worker nodes security group
+  # Note: default egress rule (allow all traffic to all destinations) applies
+  #============================================================================#
+
+  WorkerNodesSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for all the worker nodes
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-WorkerNodesSecurityGroup"
+        - Key: !Sub "kubernetes.io/cluster/${ControlPlane}"
+          Value: "owned"
+    DependsOn: VPC
+  WorkerNodesIngressFromWorkerNodes:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow all incoming traffic from other worker nodes
+      GroupId: !Ref WorkerNodesSecurityGroup
+      SourceSecurityGroupId: !Ref WorkerNodesSecurityGroup
+      IpProtocol: "-1"
+    DependsOn:
+      - WorkerNodesSecurityGroup
+  WorkerNodesIngressFromControlPlaneKubelet:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow incoming kubelet traffic (TCP/10250) from control plane 
+      GroupId: !Ref WorkerNodesSecurityGroup
+      SourceSecurityGroupId: !Ref ControlPlaneSecurityGroup
+      IpProtocol: tcp
+      FromPort: 10250
+      ToPort: 10250
+    DependsOn:
+      - WorkerNodesSecurityGroup
+      - ControlPlaneSecurityGroup
+    
+  WorkerNodesIngressFromControlPlaneHttps:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow incoming HTTPS traffic (TCP/443) from control plane (for pods running extension API servers)
+      GroupId: !Ref WorkerNodesSecurityGroup
+      SourceSecurityGroupId: !Ref ControlPlaneSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+    DependsOn:
+      - WorkerNodesSecurityGroup
+      - ControlPlaneSecurityGroup 
+
+  #============================================================================#
+  # Worker nodes (auto-scaling group)
+  #============================================================================#
+
+  WorkerNodesAutoScalingGroup:
+    Type:   
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: 1
+        MaxBatchSize: 3
+    Properties:
+      LaunchConfigurationName: !Ref WorkerNodesLaunchConfiguration
+      MinSize: !Ref NumWorkerNodes
+      MaxSize: !Ref NumWorkerNodes
+      VPCZoneIdentifier:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-WorkerNodesAutoScalingGroup"
+          PropagateAtLaunch: true
+        # Without this tag, worker nodes are unable to join the cluster:
+        - Key: !Sub "kubernetes.io/cluster/${ControlPlane}"
+          Value: "owned"
+          PropagateAtLaunch: true
+    DependsOn:
+      - WorkerNodesLaunchConfiguration
+      - PrivateSubnet1
+      - PrivateSubnet2
+  WorkerNodesRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          Effect: Allow
+          Principal:
+            Service:
+              - ec2.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+
+  # IMPORTANT NOTE: We have to define NodeGroup (type: AWS::EKS::Nodegroup), without this no woker nodes will be attach to cluster
+  WorkerNodegroup:
+    Type: AWS::EKS::Nodegroup
+    Properties:
+      ClusterName: !Sub "${AWS::StackName}"
+      NodeRole: !GetAtt WorkerNodesRole.Arn
+      ScalingConfig:
+        MinSize:
+          Ref: NumWorkerNodes
+        DesiredSize:
+          Ref: NumWorkerNodes
+        MaxSize:
+          Ref: NumWorkerNodes
+      Subnets:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
+      Tags:
+        - Key: Name
+          Value: "WorkerNodesAutoScalingGroup"
+    DependsOn:
+      - WorkerNodesRole
+      - PrivateSubnet1
+      - PrivateSubnet2
+  WorkerNodesLaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    # Wait until cluster is ready before launching worker nodes
+    Properties:
+      AssociatePublicIpAddress: false
+      IamInstanceProfile: !Ref WorkerNodesInstanceProfile
+      #ImageId: !FindInMap
+      #  - EksAmiIds
+      #  - !Ref AWS::Region
+      #  - Standard
+      InstanceType: !Ref WorkerNodesInstanceType
+      #KeyName: !Ref KeyPairName
+      SecurityGroups:
+        - !Ref WorkerNodesSecurityGroup
+
+      # IMPORTANT NOTE: This code bootstrap some cfn settings on our ec2 machine, it require some parameters like
+      # --stack <AWS::StackName>, --resource <NodeGroupName>, --region <AWS::region>
+      # /usr/bin/ping -c 5 google.com ( To ensure that our node have internet connectivity via NATGateway )
+        
+        #UserData:
+        #Fn::Base64: !Sub |
+        #    #!/bin/bash
+        #    set -o xtrace
+        #    /etc/eks/bootstrap.sh ${ControlPlane}
+        #    /opt/aws/bin/cfn-signal \
+        #                    --exit-code $? \
+        #                    --stack  ${AWS::StackName} \
+        #                    --resource WorkerNodeGroup \
+        #                    --region ${AWS::Region}
+        #    /usr/bin/ping -c 5 google.com 
+    DependsOn:
+      - ControlPlane  
+      - WorkerNodesSecurityGroup
+  WorkerNodesInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref WorkerNodesRole
+    DependsOn:
+      - WorkerNodesRole

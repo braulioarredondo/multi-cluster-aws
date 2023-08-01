@@ -1,0 +1,299 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: EKS multi-cluster 
+Parameters:
+  EKSIAMRoleName:
+    Type: String
+    Description: Name of EKS Role 
+    Default: EKSMultiClusterRole
+  EKSNodeIAMRoleName:
+    Type: String
+    Description: Name of EKS Role for Nodes
+    Default: EKSMultiClusterNodeRole
+  EKSMultiClusterName:
+    Type: String
+    Description: Name of EKS Cluster 
+    Default: multi-cluster
+  VPCCidrBlock:
+    Type: String
+    Description: VPC Block Size 
+    Default: 10.0.0.0/16
+  VPCSubnetBlock1:
+    Type: String
+    Default: 10.0.1.0/24
+    Description: CidrBlock for public subnet 01 within the VPC
+  VPCSubnetBlock2:
+    Type: String
+    Default: 10.0.2.0/24
+    Description: CidrBlock for public subnet 01 within the VPC
+  VPCSubnetBlock3:
+    Type: String
+    Default: 10.0.3.0/24
+    Description: CidrBlock for public subnet 01 within the VPC
+  VPCSubnetBlock4:
+    Type: String
+    Default: 10.0.4.0/24
+    Description: CidrBlock for public subnet 01 within the VPC
+  DBName:
+    Type: String
+    Default: fibvalues
+    Description: Initial database name
+  AllocatedStorage:
+    Type: String
+    Default: 20
+    Description: Allocated instance storage for Postgres RDS
+  StorageType:
+    Type: String
+    Default: gp2
+    Description: RDS Database Storage class
+  DBInstanceClass:
+    Type: String
+    Default: db.t3.micro
+    Description: Instance type for Postgres RDS
+  EngineVersion:
+    Type: String
+    Default: 15.3
+    Description: Postgres version for DB instance
+  MasterUsername:
+    Type: String
+    Default: postgres
+    Description: Postgres user for DB instance 
+  MasterUserPassword:
+    Type: String
+    Default: postgres
+    Description: Postgres password for DB instance
+Resources:
+  #============================================================================#
+  # EKS Cluster Role
+  #============================================================================#
+  MultiClusterRole:
+    Type: AWS::IAM::Role
+    Properties: 
+      RoleName: !Ref EKSIAMRoleName
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - eks.amazonaws.com
+              Action:
+                - 'sts:AssumeRole'
+      Description: EKS Administrator Role for EKS multi-cluster
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+  #============================================================================#
+  # EKS Node Role
+  #============================================================================#
+  MultiClusterNodeRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Ref EKSNodeIAMRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Description: EKS Administrator Role for EKS multi-cluster
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+        - "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+        - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+  #============================================================================#
+  # VPC
+  #============================================================================#
+  MultiClusterVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VPCCidrBlock
+  #============================================================================#
+  # Subnet
+  #============================================================================#
+  MultiClusterSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MultiClusterVPC
+      CidrBlock: !Ref VPCSubnetBlock1
+      AvailabilityZone: !Select [ 0, !GetAZs ]
+    DependsOn: 
+      - MultiClusterVPC
+  MultiClusterSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MultiClusterVPC
+      CidrBlock: !Ref VPCSubnetBlock2
+      AvailabilityZone: !Select [ 1, !GetAZs ]
+    DependsOn: 
+      - MultiClusterVPC
+  MultiClusterSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MultiClusterVPC
+      CidrBlock: !Ref VPCSubnetBlock3
+      AvailabilityZone: !Select [ 0, !GetAZs ]
+    DependsOn: 
+      - MultiClusterVPC
+  MultiClusterSubnet4:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MultiClusterVPC
+      CidrBlock: !Ref VPCSubnetBlock4
+      AvailabilityZone: !Select [ 1, !GetAZs ]
+    DependsOn: 
+      - MultiClusterVPC
+  #============================================================================#
+  # Postgres Subnet Group
+  #============================================================================#
+  MultiClusterRDSSubnetGroup:
+      Type: "AWS::RDS::DBSubnetGroup"
+      Properties:
+        DBSubnetGroupName: "multi-cluster-rds-subnet-group"
+        DBSubnetGroupDescription: "multi-cluster postgres subnet group"
+        SubnetIds:
+            - !Ref MultiClusterSubnet1
+            - !Ref MultiClusterSubnet2
+            - !Ref MultiClusterSubnet3
+            - !Ref MultiClusterSubnet4
+      DependsOn: 
+      - MultiClusterSubnet1
+      - MultiClusterSubnet2
+      - MultiClusterSubnet3
+      - MultiClusterSubnet4
+  #============================================================================#
+  # Redis Subnet Group
+  #============================================================================#
+  MultiClusterRedisSubnetGroup:
+      Type: "AWS::ElastiCache::SubnetGroup"
+      Properties:
+        CacheSubnetGroupName: "multi-cluster-redis-subnet-group"
+        Description: "multi-cluster redis subnet group"
+        SubnetIds:
+            - !Ref MultiClusterSubnet1
+            - !Ref MultiClusterSubnet2
+            - !Ref MultiClusterSubnet3
+            - !Ref MultiClusterSubnet4
+      DependsOn: 
+      - MultiClusterSubnet1
+      - MultiClusterSubnet2
+      - MultiClusterSubnet3
+      - MultiClusterSubnet4
+  #============================================================================#
+  # Security Group
+  #============================================================================#
+  MultiClusterSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Cluster communication with worker nodes
+      VpcId: !Ref MultiClusterVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 6379
+          CidrIp : !Ref VPCCidrBlock
+    DependsOn: 
+      - MultiClusterVPC
+  #============================================================================#
+  # EKS Cluster
+  #============================================================================#
+  MultiClusterEKS:
+    Type: AWS::EKS::Cluster
+    Properties: 
+      Name: !Ref EKSMultiClusterName 
+      RoleArn:  !GetAtt MultiClusterRole.Arn
+      ResourcesVpcConfig:
+          SecurityGroupIds:
+          - !Ref MultiClusterSecurityGroup
+          SubnetIds:
+          - !Ref MultiClusterSubnet1
+          - !Ref MultiClusterSubnet2
+          - !Ref MultiClusterSubnet3
+          - !Ref MultiClusterSubnet4
+    DependsOn: 
+      - MultiClusterRole
+      - MultiClusterSubnet1
+      - MultiClusterSubnet2
+      - MultiClusterSubnet3
+      - MultiClusterSubnet4
+      - MultiClusterSecurityGroup
+  #============================================================================#
+  # EKS Cluster Addon
+  #============================================================================#
+  MultiClusterVpcCni:
+    Type: AWS::EKS::Addon
+    Properties:
+      AddonName: multi-cluster-vpc-cni
+      ClusterName: !Ref EKSMultiClusterName  
+      ResolveConflicts: OVERWRITE
+    DependsOn: 
+      - MultiClusterEKS
+  #============================================================================#
+  # EKS Node Group
+  #============================================================================#
+  MultiClusterNodeGroup:
+      Type: 'AWS::EKS::Nodegroup'
+      Properties:
+        ClusterName: !Ref EKSMultiClusterName 
+        NodeRole: !GetAtt MultiClusterNodeRole.Arn
+        InstanceTypes:
+          - t3.small
+        ScalingConfig:
+          MinSize: 2
+          DesiredSize: 3
+          MaxSize: 4
+        Subnets:
+          - !Ref MultiClusterSubnet1
+          - !Ref MultiClusterSubnet2
+          - !Ref MultiClusterSubnet3
+          - !Ref MultiClusterSubnet4
+      DependsOn: 
+      - MultiClusterNodeRole
+      - MultiClusterEKS
+      - MultiClusterVpcCni
+      - MultiClusterSubnet1
+      - MultiClusterSubnet2
+      - MultiClusterSubnet3
+      - MultiClusterSubnet4
+      - MultiClusterSecurityGroup
+  #============================================================================#
+  # Postgres RDS
+  #============================================================================#
+  MultiClusterPostgres:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName: !Ref DBName
+      AllocatedStorage: !Ref AllocatedStorage
+      StorageType: !Ref StorageType
+      AutoMinorVersionUpgrade: false
+      DBInstanceClass: !Ref DBInstanceClass
+      DBSubnetGroupName: !Ref MultiClusterRDSSubnetGroup
+      Engine: postgres
+      EngineVersion: !Ref EngineVersion
+      MasterUsername: !Ref MasterUsername
+      MasterUserPassword: !Ref MasterUserPassword
+      VPCSecurityGroups: 
+        - !Ref MultiClusterSecurityGroup
+    DependsOn: 
+      - MultiClusterRDSSubnetGroup
+      - MultiClusterSecurityGroup
+  #============================================================================#
+  # Redis Cluster
+  #============================================================================#
+  MultiClusterRedis:
+    Type: 'AWS::ElastiCache::CacheCluster'
+    Properties:    
+      ClusterName: multi-cluster-redis
+      Engine: redis
+      CacheNodeType: cache.t2.micro
+      NumCacheNodes: '1'
+      Port: 6379
+      CacheSubnetGroupName: !Ref MultiClusterRedisSubnetGroup
+      VpcSecurityGroupIds: 
+        - !GetAtt  MultiClusterSecurityGroup.GroupId
+    DependsOn: 
+      - MultiClusterRedisSubnetGroup
+      - MultiClusterSecurityGroup
+
