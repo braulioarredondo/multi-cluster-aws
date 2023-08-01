@@ -48,3 +48,7 @@ jobs:
           --template-body file://multi-cluster.yaml \
           --parameters ParameterKey=EKSMultiClusterName,ParameterValue=multi-cluster \
           --capabilities CAPABILITY_NAMED_IAM
+
+          aws cloudformation wait stack-create-complete --stack-name multi-cluster
+          aws eks update-kubeconfig --region us-east-1 --name multi-cluster
+          kubectl apply -f ./k8s

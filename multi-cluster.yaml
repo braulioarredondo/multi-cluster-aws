@@ -5,6 +5,10 @@ Parameters:
     Type: String
     Description: Name of EKS Role 
     Default: EKSMultiClusterRole
+  EKSNodeIAMRoleName:
+    Type: String
+    Description: Name of EKS Role for Nodes
+    Default: EKSMultiClusterNodeRole
   EKSMultiClusterName:
     Type: String
     Description: Name of EKS Cluster 
@@ -59,7 +63,7 @@ Parameters:
     Description: Postgres password for DB instance
 Resources:
   #============================================================================#
-  # Role
+  # EKS Cluster Role
   #============================================================================#
   MultiClusterRole:
     Type: AWS::IAM::Role
@@ -78,6 +82,27 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
         - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+  #============================================================================#
+  # EKS Node Role
+  #============================================================================#
+  MultiClusterNodeRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Ref EKSNodeIAMRoleName
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Description: EKS Administrator Role for EKS multi-cluster
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+        - "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+        - "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
   #============================================================================#
   # VPC
   #============================================================================#
@@ -189,6 +214,32 @@ Resources:
           - !Ref MultiClusterSubnet4
     DependsOn: 
       - MultiClusterRole
+      - MultiClusterSubnet1
+      - MultiClusterSubnet2
+      - MultiClusterSubnet3
+      - MultiClusterSubnet4
+      - MultiClusterSecurityGroup
+  #============================================================================#
+  # EKS Node Group
+  #============================================================================#
+  MultiClusterNodeGroup:
+      Type: 'AWS::EKS::Nodegroup'
+      Properties:
+        ClusterName: !Ref EKSMultiClusterName 
+        NodeRole: !GetAtt MultiClusterNodeRole.Arn
+        InstanceTypes:
+          - t3.small
+        ScalingConfig:
+          MinSize: 2
+          DesiredSize: 3
+          MaxSize: 4
+        Subnets:
+          - !Ref MultiClusterSubnet1
+          - !Ref MultiClusterSubnet2
+          - !Ref MultiClusterSubnet3
+          - !Ref MultiClusterSubnet4
+      DependsOn: 
+      - MultiClusterNodeRole
       - MultiClusterSubnet1
       - MultiClusterSubnet2
       - MultiClusterSubnet3
