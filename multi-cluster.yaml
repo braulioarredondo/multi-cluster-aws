@@ -61,7 +61,7 @@ Resources:
           Value: 1
         - Key: !Sub "kubernetes.io/cluster/${AWS::StackName}"
           Value: shared
-    DepensOn: VPC
+    DependsOn: VPC
   PublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
@@ -78,7 +78,7 @@ Resources:
           Value: 1
         - Key: !Sub "kubernetes.io/cluster/${AWS::StackName}"
           Value: shared
-    DepensOn: VPC
+    DependsOn: VPC
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -95,7 +95,7 @@ Resources:
           Value: 1
         - Key: !Sub "kubernetes.io/cluster/${AWS::StackName}"
           Value: shared
-    DepensOn: VPC
+    DependsOn: VPC
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
@@ -112,7 +112,7 @@ Resources:
           Value: 1
         - Key: !Sub "kubernetes.io/cluster/${AWS::StackName}"
           Value: shared
-    DepensOn: VPC    
+    DependsOn: VPC    
   PersistenceSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -125,7 +125,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-PersistenceSubnet1"
-    DepensOn: VPC
+    DependsOn: VPC
   PersistenceSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
@@ -138,7 +138,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub "${AWS::StackName}-PersistenceSubnet2"
-    DepensOn: VPC
+    DependsOn: VPC
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
@@ -150,7 +150,7 @@ Resources:
     Properties:
       InternetGatewayId: !Ref InternetGateway
       VpcId: !Ref VPC
-    DepensOn: 
+    DependsOn: 
       - VPC
       - InternetGateway
   RouteTable:
