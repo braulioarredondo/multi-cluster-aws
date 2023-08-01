@@ -477,6 +477,7 @@ Resources:
         - !Ref PrivateSubnet1
         - !Ref PrivateSubnet2
     DependsOn:
+      - ControlPlane
       - WorkerNodesRole
       - PrivateSubnet1
       - PrivateSubnet2
