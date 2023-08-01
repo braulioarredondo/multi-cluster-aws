@@ -29,7 +29,7 @@ Mappings:
       PersistenceSubnet2: 10.100.80.0/20
   EksAmiIds:    
     us-east-1:
-      Standard: ami-0b614a5d911900a9b
+      Standard: ami-033b95fb8079dc481
     
 Resources:
   #============================================================================#
@@ -487,10 +487,10 @@ Resources:
     Properties:
       AssociatePublicIpAddress: false
       IamInstanceProfile: !Ref WorkerNodesInstanceProfile
-      #ImageId: !FindInMap
-      #  - EksAmiIds
-      #  - !Ref AWS::Region
-      #  - Standard
+      ImageId: !FindInMap
+        - EksAmiIds
+        - !Ref AWS::Region
+        - Standard
       InstanceType: !Ref WorkerNodesInstanceType
       #KeyName: !Ref KeyPairName
       SecurityGroups:
