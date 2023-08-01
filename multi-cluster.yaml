@@ -220,6 +220,17 @@ Resources:
       - MultiClusterSubnet4
       - MultiClusterSecurityGroup
   #============================================================================#
+  # EKS Cluster Addon
+  #============================================================================#
+  MultiClusterVpcCni:
+    Type: AWS::EKS::Addon
+    Properties:
+      AddonName: multi-cluster-vpc-cni
+      ClusterName: !Ref EKSMultiClusterName  
+      ResolveConflicts: OVERWRITE
+    DependsOn: 
+      - MultiClusterEKS
+  #============================================================================#
   # EKS Node Group
   #============================================================================#
   MultiClusterNodeGroup:
@@ -241,6 +252,7 @@ Resources:
       DependsOn: 
       - MultiClusterNodeRole
       - MultiClusterEKS
+      - MultiClusterVpcCni
       - MultiClusterSubnet1
       - MultiClusterSubnet2
       - MultiClusterSubnet3
