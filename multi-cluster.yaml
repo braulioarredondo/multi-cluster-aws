@@ -240,6 +240,7 @@ Resources:
           - !Ref MultiClusterSubnet4
       DependsOn: 
       - MultiClusterNodeRole
+      - MultiClusterEKS
       - MultiClusterSubnet1
       - MultiClusterSubnet2
       - MultiClusterSubnet3
