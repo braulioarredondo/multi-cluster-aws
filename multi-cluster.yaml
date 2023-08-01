@@ -476,9 +476,6 @@ Resources:
       Subnets:
         - !Ref PrivateSubnet1
         - !Ref PrivateSubnet2
-      Tags:
-        - Key: Name
-          Value: "WorkerNodesAutoScalingGroup"
     DependsOn:
       - WorkerNodesRole
       - PrivateSubnet1
