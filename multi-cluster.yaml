@@ -169,7 +169,7 @@ Resources:
       RouteTableId: !Ref RouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
-      DependsOn: VPCGatewayAttachment
+    DependsOn: VPCGatewayAttachment
   NatGateway1EIP:
     Type: AWS::EC2::EIP
     DependsOn: VPCGatewayAttachment
