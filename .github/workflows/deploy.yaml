@@ -51,4 +51,11 @@ jobs:
 
           aws cloudformation wait stack-create-complete --stack-name multi-cluster
           aws eks update-kubeconfig --region us-east-1 --name multi-cluster
+          sudo yum -y install openssl
+          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+          chmod 700 get_helm.sh
+          ./get_helm.sh
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+          helm install my-release ingress-nginx/ingress-nginx
+          kubectl create secret generic pgpassword --from-literal PGPASSWORD=${{ secrets.PGPASSWORD }}
           kubectl apply -f ./k8s
