@@ -396,7 +396,7 @@ Resources:
       GroupId: !Ref WorkerNodesSecurityGroup
       SourceSecurityGroupId: !Ref ControlPlaneSecurityGroup
       IpProtocol: tcp
-      FromPort: 10250
+      FromPort: 3000
       ToPort: 10250
     DependsOn:
       - WorkerNodesSecurityGroup
