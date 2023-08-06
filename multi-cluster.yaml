@@ -374,23 +374,11 @@ Resources:
       GroupId: !Ref WorkerNodesSecurityGroup
       SourceSecurityGroupId: !Ref ControlPlaneSecurityGroup
       IpProtocol: tcp
-      FromPort: 10250
+      FromPort: 3000
       ToPort: 10250
     DependsOn:
       - WorkerNodesSecurityGroup
       - ControlPlaneSecurityGroup
-  WorkerNodesIngressFromIngressService:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      Description: Allow incoming kubelet traffic (TCP/10250) from control plane 
-      GroupId: !Ref WorkerNodesSecurityGroup
-      SourceSecurityGroupId: !Ref ControlPlaneSecurityGroup
-      IpProtocol: tcp
-      FromPort: 3000
-      ToPort: 3000
-    DependsOn:
-      - WorkerNodesSecurityGroup
-      - ControlPlaneSecurityGroup    
   WorkerNodesIngressFromControlPlaneHttps:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
