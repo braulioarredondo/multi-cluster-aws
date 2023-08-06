@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: EKS cluster using a VPC with two public subnets
+Description: Fibonacci Calculator EKS cluster using a VPC with two public subnets 
 Parameters:
   EKSClusterName:
     Type: String
@@ -7,16 +7,12 @@ Parameters:
     Default: multi-k8s-cluster
   NumWorkerNodes:
     Type: Number
-    Description: Number of worker nodes to create
+    Description: Number of nodes to create
     Default: 3
   WorkerNodesInstanceType: 
     Type: String
     Description: EC2 instance type for the worker nodes
-    Default: t3.small  
-  KeyPairName:
-    Type: String
-    Description: Name of an existing EC2 key pair (for SSH-access to the worker node instances)
-    Default: eks-test  
+    Default: t3.small   
 Mappings:
   VpcIpRanges:
     Option1:
@@ -32,6 +28,7 @@ Mappings:
       Standard: ami-033b95fb8079dc481
     
 Resources:
+
   #============================================================================#
   # VPC
   #============================================================================#
@@ -50,9 +47,6 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !FindInMap [ VpcIpRanges, Option1, PublicSubnet1 ]
-      # AvailabilityZone: !Select
-      #   - 0
-      #   - !GetAZs ""
       AvailabilityZone: !Select [ 0, !GetAZs '' ]
       Tags:
         - Key: Name
@@ -67,9 +61,6 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !FindInMap [ VpcIpRanges, Option1, PublicSubnet2 ]
-      # AvailabilityZone: !Select
-      #   - 1
-      #   - !GetAZs ""
       AvailabilityZone: !Select [ 1, !GetAZs '' ]
       Tags:
         - Key: Name
@@ -84,9 +75,6 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !FindInMap [ VpcIpRanges, Option1, PrivateSubnet1 ]
-      # AvailabilityZone: !Select
-      #   - 1
-      #   - !GetAZs ""
       AvailabilityZone: !Select [ 0, !GetAZs '' ]
       Tags:
         - Key: Name
@@ -101,9 +89,6 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !FindInMap [ VpcIpRanges, Option1, PrivateSubnet2 ]
-      # AvailabilityZone: !Select
-      #   - 1
-      #   - !GetAZs ""
       AvailabilityZone: !Select [ 1, !GetAZs '' ]
       Tags:
         - Key: Name
@@ -118,9 +103,6 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !FindInMap [ VpcIpRanges, Option1, PersistenceSubnet1 ]
-      # AvailabilityZone: !Select
-      #   - 1
-      #   - !GetAZs ""
       AvailabilityZone: !Select [ 0, !GetAZs '' ]
       Tags:
         - Key: Name
@@ -131,9 +113,6 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !FindInMap [ VpcIpRanges, Option1, PersistenceSubnet2 ]
-      # AvailabilityZone: !Select
-      #   - 1
-      #   - !GetAZs ""
       AvailabilityZone: !Select [ 1, !GetAZs '' ]
       Tags:
         - Key: Name
@@ -163,8 +142,6 @@ Resources:
     DependsOn: VPC
   InternetGatewayRoute:
     Type: AWS::EC2::Route
-    # DependsOn is mandatory because route targets InternetGateway
-    # See here: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-attribute-dependson.html#gatewayattachment
     Properties:
       RouteTableId: !Ref RouteTable
       DestinationCidrBlock: 0.0.0.0/0
@@ -279,8 +256,9 @@ Resources:
       - RouteTable
 
   #============================================================================#
-  # Control plane
+  # EKS Cluster
   #============================================================================#
+
   ControlPlaneRole:
     Type: AWS::IAM::Role
     Properties:
@@ -299,7 +277,6 @@ Resources:
     Type: AWS::EKS::Cluster
     Properties:
       Name: !Ref AWS::StackName
-      #Version: "1.19"
       RoleArn: !GetAtt ControlPlaneRole.Arn
       ResourcesVpcConfig:
         SecurityGroupIds:
@@ -312,8 +289,9 @@ Resources:
       - ControlPlaneSecurityGroup
       - PrivateSubnet1
       - PrivateSubnet2
+
   #============================================================================#
-  # Control plane security group
+  # EKS Cluster security group
   #============================================================================#
 
   ControlPlaneSecurityGroup:
@@ -354,7 +332,7 @@ Resources:
   ControlPlaneEgressToWorkerNodesHttps:
     Type: AWS::EC2::SecurityGroupEgress
     Properties:
-      Description: Allow outgoing HTTPS traffic (TCP/442) to worker nodes (for pods running extension API servers)
+      Description: Allow outgoing HTTPS traffic (TCP/443) to worker nodes (for pods running extension API servers)
       GroupId: !Ref ControlPlaneSecurityGroup
       DestinationSecurityGroupId: !Ref WorkerNodesSecurityGroup
       IpProtocol: tcp
@@ -396,12 +374,23 @@ Resources:
       GroupId: !Ref WorkerNodesSecurityGroup
       SourceSecurityGroupId: !Ref ControlPlaneSecurityGroup
       IpProtocol: tcp
-      FromPort: 3000
+      FromPort: 10250
       ToPort: 10250
     DependsOn:
       - WorkerNodesSecurityGroup
       - ControlPlaneSecurityGroup
-    
+  WorkerNodesIngressFromIngressService:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow incoming kubelet traffic (TCP/10250) from control plane 
+      GroupId: !Ref WorkerNodesSecurityGroup
+      SourceSecurityGroupId: !Ref ControlPlaneSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3000
+      ToPort: 3000
+    DependsOn:
+      - WorkerNodesSecurityGroup
+      - ControlPlaneSecurityGroup    
   WorkerNodesIngressFromControlPlaneHttps:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -424,7 +413,7 @@ Resources:
     UpdatePolicy:
       AutoScalingRollingUpdate:
         MinInstancesInService: 1
-        MaxBatchSize: 3
+        MaxBatchSize: 1
     Properties:
       LaunchConfigurationName: !Ref WorkerNodesLaunchConfiguration
       MinSize: !Ref NumWorkerNodes
@@ -460,12 +449,13 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
 
-  # IMPORTANT NOTE: We have to define NodeGroup (type: AWS::EKS::Nodegroup), without this no woker nodes will be attach to cluster
   WorkerNodegroup:
     Type: AWS::EKS::Nodegroup
     Properties:
       ClusterName: !Sub "${AWS::StackName}"
       NodeRole: !GetAtt WorkerNodesRole.Arn
+      InstanceTypes:
+        - !Ref WorkerNodesInstanceType
       ScalingConfig:
         MinSize:
           Ref: NumWorkerNodes
@@ -492,7 +482,6 @@ Resources:
         - !Ref AWS::Region
         - Standard
       InstanceType: !Ref WorkerNodesInstanceType
-      #KeyName: !Ref KeyPairName
       SecurityGroups:
         - !Ref WorkerNodesSecurityGroup
     DependsOn:
