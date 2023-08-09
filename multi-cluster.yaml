@@ -437,28 +437,28 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
 
-  WorkerNodegroup:
-    Type: AWS::EKS::Nodegroup
-    Properties:
-      ClusterName: !Sub "${AWS::StackName}"
-      NodeRole: !GetAtt WorkerNodesRole.Arn
-      InstanceTypes:
-        - !Ref WorkerNodesInstanceType
-      ScalingConfig:
-        MinSize:
-          Ref: NumWorkerNodes
-        DesiredSize:
-          Ref: NumWorkerNodes
-        MaxSize:
-          Ref: NumWorkerNodes
-      Subnets:
-        - !Ref PrivateSubnet1
-        - !Ref PrivateSubnet2
-    DependsOn:
-      - ControlPlane
-      - WorkerNodesRole
-      - PrivateSubnet1
-      - PrivateSubnet2
+  #WorkerNodegroup:
+  #  Type: AWS::EKS::Nodegroup
+  #  Properties:
+  #    ClusterName: !Sub "${AWS::StackName}"
+  #    NodeRole: !GetAtt WorkerNodesRole.Arn
+  #    InstanceTypes:
+  #      - !Ref WorkerNodesInstanceType
+  #    ScalingConfig:
+  #      MinSize:
+  #        Ref: NumWorkerNodes
+  #      DesiredSize:
+  #        Ref: NumWorkerNodes
+  #      MaxSize:
+  #        Ref: NumWorkerNodes
+  #    Subnets:
+  #      - !Ref PrivateSubnet1
+  #      - !Ref PrivateSubnet2
+  #  DependsOn:
+  #    - ControlPlane
+  #    - WorkerNodesRole
+  #    - PrivateSubnet1
+  #    - PrivateSubnet2
   WorkerNodesLaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
     # Wait until cluster is ready before launching worker nodes
