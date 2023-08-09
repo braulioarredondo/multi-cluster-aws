@@ -396,31 +396,31 @@ Resources:
   # Worker nodes (auto-scaling group)
   #============================================================================#
 
-  WorkerNodesAutoScalingGroup:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    UpdatePolicy:
-      AutoScalingRollingUpdate:
-        MinInstancesInService: 1
-        MaxBatchSize: 1
-    Properties:
-      LaunchConfigurationName: !Ref WorkerNodesLaunchConfiguration
-      MinSize: !Ref NumWorkerNodes
-      MaxSize: !Ref NumWorkerNodes
-      VPCZoneIdentifier:
-        - !Ref PrivateSubnet1
-        - !Ref PrivateSubnet2
-      Tags:
-        - Key: Name
-          Value: !Sub "${AWS::StackName}-WorkerNodesAutoScalingGroup"
-          PropagateAtLaunch: true
-        # Without this tag, worker nodes are unable to join the cluster:
-        - Key: !Sub "kubernetes.io/cluster/${ControlPlane}"
-          Value: "owned"
-          PropagateAtLaunch: true
-    DependsOn:
-      - WorkerNodesLaunchConfiguration
-      - PrivateSubnet1
-      - PrivateSubnet2
+  #WorkerNodesAutoScalingGroup:
+  #  Type: AWS::AutoScaling::AutoScalingGroup
+  #  UpdatePolicy:
+  #    AutoScalingRollingUpdate:
+  #      MinInstancesInService: 1
+  #      MaxBatchSize: 1
+  #  Properties:
+  #    LaunchConfigurationName: !Ref WorkerNodesLaunchConfiguration
+  #    MinSize: !Ref NumWorkerNodes
+  #    MaxSize: !Ref NumWorkerNodes
+  #    VPCZoneIdentifier:
+  #      - !Ref PrivateSubnet1
+  #      - !Ref PrivateSubnet2
+  #    Tags:
+  #      - Key: Name
+  #        Value: !Sub "${AWS::StackName}-WorkerNodesAutoScalingGroup"
+  #        PropagateAtLaunch: true
+  #      # Without this tag, worker nodes are unable to join the cluster:
+  #      - Key: !Sub "kubernetes.io/cluster/${ControlPlane}"
+  #        Value: "owned"
+  #       PropagateAtLaunch: true
+  #  DependsOn:
+  #    - WorkerNodesLaunchConfiguration
+  #    - PrivateSubnet1
+  #    - PrivateSubnet2
   WorkerNodesRole:
     Type: AWS::IAM::Role
     Properties:
@@ -437,48 +437,48 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
 
-  #WorkerNodegroup:
-  #  Type: AWS::EKS::Nodegroup
-  #  Properties:
-  #    ClusterName: !Sub "${AWS::StackName}"
-  #    NodeRole: !GetAtt WorkerNodesRole.Arn
-  #    InstanceTypes:
-  #      - !Ref WorkerNodesInstanceType
-  #    ScalingConfig:
-  #      MinSize:
-  #        Ref: NumWorkerNodes
-  #      DesiredSize:
-  #        Ref: NumWorkerNodes
-  #      MaxSize:
-  #        Ref: NumWorkerNodes
-  #    Subnets:
-  #      - !Ref PrivateSubnet1
-  #      - !Ref PrivateSubnet2
-  #  DependsOn:
-  #    - ControlPlane
-  #    - WorkerNodesRole
-  #    - PrivateSubnet1
-  #    - PrivateSubnet2
-  WorkerNodesLaunchConfiguration:
-    Type: AWS::AutoScaling::LaunchConfiguration
-    # Wait until cluster is ready before launching worker nodes
+  WorkerNodegroup:
+    Type: AWS::EKS::Nodegroup
     Properties:
-      AssociatePublicIpAddress: false
-      IamInstanceProfile: !Ref WorkerNodesInstanceProfile
-      ImageId: !FindInMap
-        - EksAmiIds
-        - !Ref AWS::Region
-        - Standard
-      InstanceType: !Ref WorkerNodesInstanceType
-      SecurityGroups:
-        - !Ref WorkerNodesSecurityGroup
+      ClusterName: !Sub "${AWS::StackName}"
+      NodeRole: !GetAtt WorkerNodesRole.Arn
+      InstanceTypes:
+        - !Ref WorkerNodesInstanceType
+      ScalingConfig:
+        MinSize:
+          Ref: NumWorkerNodes
+        DesiredSize:
+          Ref: NumWorkerNodes
+        MaxSize:
+          Ref: NumWorkerNodes
+      Subnets:
+        - !Ref PrivateSubnet1
+        - !Ref PrivateSubnet2
     DependsOn:
-      - ControlPlane  
-      - WorkerNodesSecurityGroup
-  WorkerNodesInstanceProfile:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      Roles:
-        - !Ref WorkerNodesRole
-    DependsOn:
+      - ControlPlane
       - WorkerNodesRole
+      - PrivateSubnet1
+      - PrivateSubnet2
+  #WorkerNodesLaunchConfiguration:
+  #  Type: AWS::AutoScaling::LaunchConfiguration
+    # Wait until cluster is ready before launching worker nodes
+  #  Properties:
+  #    AssociatePublicIpAddress: false
+  #    IamInstanceProfile: !Ref WorkerNodesInstanceProfile
+  #    ImageId: !FindInMap
+  #      - EksAmiIds
+  #      - !Ref AWS::Region
+  #      - Standard
+  #    InstanceType: !Ref WorkerNodesInstanceType
+  #    SecurityGroups:
+  #      - !Ref WorkerNodesSecurityGroup
+  #  DependsOn:
+  #    - ControlPlane  
+  #    - WorkerNodesSecurityGroup
+  #WorkerNodesInstanceProfile:
+  #  Type: AWS::IAM::InstanceProfile
+  #  Properties:
+  #    Roles:
+  #      - !Ref WorkerNodesRole
+  #  DependsOn:
+  #    - WorkerNodesRole
