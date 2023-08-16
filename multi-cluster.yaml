@@ -5,7 +5,15 @@ Parameters:
     Type: String
     Description: Name of k8s cluster
     Default: multi-k8s-cluster
-  NumWorkerNodes:
+  MinNumWorkerNodes:
+    Type: Number
+    Description: Number of nodes to create
+    Default: 1 
+  DesiredNumWorkerNodes:
+    Type: Number
+    Description: Number of nodes to create
+    Default: 3    
+  MaxNumWorkerNodes:
     Type: Number
     Description: Number of nodes to create
     Default: 3
