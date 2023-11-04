@@ -14,7 +14,7 @@ EKS cluster contains the following deployments and services:
 - **Nginx Ingress**
 
 
-![App Screenshot](https://via.placeholder.com/468x300?text=App+Screenshot+Here)
+![App Screenshot](https://raw.githubusercontent.com/braulioarredondo/multi-cluster-aws/master/images/app.png)
 
 
 ## Arquitecture
@@ -51,10 +51,10 @@ If you'll fork or use the Github Actions template please provide the following v
 
 Workflow builds and tests the docker images, create a cloudformation stack and finally deploy the application inside the EKS cluster. 
 
-![App](https://raw.githubusercontent.com/braulioarredondo/multi-cluster-aws/master/images/app.png)
+![App](https://raw.githubusercontent.com/braulioarredondo/multi-cluster-aws/master/images/workflow.png)
 ## Cloudformation Designer
 
-![Workflow](https://raw.githubusercontent.com/braulioarredondo/multi-cluster-aws/master/images/workflow.png)
+![Workflow](https://raw.githubusercontent.com/braulioarredondo/multi-cluster-aws/master/images/multi-cluster.png)
 
 
 ## 🛠 Skills
