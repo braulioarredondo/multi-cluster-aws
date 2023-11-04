@@ -14,6 +14,8 @@ EKS cluster contains the following deployments and services:
 - **Nginx Ingress**
 
 
+![App Screenshot](https://via.placeholder.com/468x300?text=App+Screenshot+Here)
+
 
 ## Arquitecture
 
@@ -31,7 +33,7 @@ Deployment uses the next instances types and sizes for the infrastructure.
 
 
 
-## Environment Variables
+## Deployment
 
 Repo includes Github Actions to deploy the application using the provided Cloudformation template.
 
@@ -47,7 +49,9 @@ If you'll fork or use the Github Actions template please provide the following v
 
 `PGPASSWORD`(secret)
 
+Workflow builds and tests the docker images, create a cloudformation stack and finally deploy the application inside the EKS cluster. 
 
+![App Screenshot](https://via.placeholder.com/468x300?text=App+Screenshot+Here)
 ## Cloudformation Designer
 
 ![App Screenshot](https://via.placeholder.com/468x300?text=App+Screenshot+Here)
