@@ -51,10 +51,10 @@ If you'll fork or use the Github Actions template please provide the following v
 
 Workflow builds and tests the docker images, create a cloudformation stack and finally deploy the application inside the EKS cluster. 
 
-![App Screenshot](https://via.placeholder.com/468x300?text=App+Screenshot+Here)
+![App](https://raw.githubusercontent.com/braulioarredondo/multi-cluster-aws/master/images/app.png)
 ## Cloudformation Designer
 
-![App Screenshot](https://via.placeholder.com/468x300?text=App+Screenshot+Here)
+![Workflow](https://raw.githubusercontent.com/braulioarredondo/multi-cluster-aws/master/images/workflow.png)
 
 
 ## 🛠 Skills
