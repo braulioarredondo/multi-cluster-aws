@@ -24,10 +24,10 @@ Deployment uses the next instances types and sizes for the infrastructure.
 | Resource |    Number     | Type/Size               |
 | :-------- | :------- | :------------------------- |
 | **VPC** | `1` | **/16** |
-| **public subnet** | `2` | **/20** |
-| **private subnet** | `2` | **/20** |
-| **persistent subnet** | `2` | **/20** |
-| **ec2** | `3` | **t3.small** |
+| **Public Subnet** | `2` | **/20** |
+| **Private Subnet** | `2` | **/20** |
+| **Persistent Subnet** | `2` | **/20** |
+| **EC2** | `3` | **t3.small** |
 
 
 
@@ -51,10 +51,10 @@ If you'll fork or use the Github Actions template please provide the following v
 
 Workflow builds and tests the docker images, create a cloudformation stack and finally deploy the application inside the EKS cluster. 
 
-![App](https://raw.githubusercontent.com/braulioarredondo/multi-cluster-aws/master/images/workflow.png)
+![Workflow](https://raw.githubusercontent.com/braulioarredondo/multi-cluster-aws/master/images/workflow.png)
 ## Cloudformation Designer
 
-![Workflow](https://raw.githubusercontent.com/braulioarredondo/multi-cluster-aws/master/images/multi-cluster.png)
+![Designer](https://raw.githubusercontent.com/braulioarredondo/multi-cluster-aws/master/images/multi-cluster.png)
 
 
 ## 🛠 Skills
